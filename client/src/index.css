@@ -1,0 +1,44 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root{
+  --brand: #0f172a; /* slate-900 */
+  --accent: #0ea5a4; /* teal-400 */
+}
+
+html,body,#root{
+  height:100%;
+}
+
+/* Small card shadow */
+.card{
+  @apply bg-white rounded-lg shadow-sm p-4;
+}
+
+/* Make buttons and inputs look nicer across the app */
+button{ @apply transition-colors duration-150 }
+
+/* subtle container */
+.container-card{ @apply bg-white rounded-xl shadow p-6 }
+
+/* responsive wrappers */
+@media (min-width: 768px){
+  main { padding-left: 0; padding-right:0 }
+}
+
+/* Toast tweaks */
+.toast-enter{ opacity: 0; transform: translateY(8px) }
+.toast-enter-active{ opacity: 1; transform: translateY(0); transition: all 200ms }
+
+/* input focus ring override for nicer color */
+input:focus, textarea:focus {
+  box-shadow: 0 0 0 4px rgba(14,165,164,0.12);
+}
+
+/* hover effect for cards */
+.card:hover{ transform: translateY(-4px); transition: transform 160ms ease; box-shadow: 0 10px 25px rgba(2,6,23,0.08) }
+
+/* header glass */
+header { background: linear-gradient(180deg, rgba(255,255,255,0.8), rgba(255,255,255,0.6)); }
+

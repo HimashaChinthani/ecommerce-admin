@@ -14,6 +14,9 @@ async function buildAdmin() {
   const AdminJSSequelize = AdminJSSequelizeModule.default || AdminJSSequelizeModule;
 
   AdminJS.registerAdapter(AdminJSSequelize);
+  // We no longer use filesystem `imageUrl` field. Keep features empty; Admin uploads
+  // would require a custom feature to write into the DB BLOB column.
+  const productFeatures = [];
 
   const admin = new AdminJS({
     databases: [sequelize],
@@ -40,7 +43,20 @@ async function buildAdmin() {
           isAccessible: ({ currentAdmin }) => currentAdmin && currentAdmin.role === 'admin',
         },
       },
-      { resource: Product },
+      {
+        resource: Product,
+        features: productFeatures,
+        options: {
+          properties: {
+            price: { type: 'number', label: 'Price ($)', description: 'Enter price in USD ($)' },
+            // hide binary and metadata fields from the Admin UI
+            image: { isVisible: false },
+            filename: { isVisible: false },
+            mimeType: { isVisible: false },
+            size: { isVisible: false },
+          },
+        },
+      },
       { resource: Category },
       { resource: Order },
       { resource: OrderItem },
