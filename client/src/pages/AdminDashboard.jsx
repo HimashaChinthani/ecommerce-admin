@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import api from '../lib/api'
 import Toast from '../components/Toast'
+import StatCard from '../components/StatCard'
 
 export default function AdminDashboard(){
   const [stats, setStats] = useState(null)
@@ -46,27 +47,11 @@ export default function AdminDashboard(){
           </div>
         </header>
 
-        <section className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-          <div className="p-6 bg-white rounded-lg shadow">
-            <div className="text-sm text-gray-500">Revenue</div>
-            <div className="mt-2 text-3xl font-extrabold text-green-600">${Number(revenue||0).toFixed(2)}</div>
-            <div className="text-xs text-gray-400 mt-1">Total revenue</div>
-          </div>
-          <div className="p-6 bg-white rounded-lg shadow">
-            <div className="text-sm text-gray-500">Products</div>
-            <div className="mt-2 text-3xl font-extrabold text-sky-600">{products.length}</div>
-            <div className="text-xs text-gray-400 mt-1">Total products</div>
-          </div>
-          <div className="p-6 bg-white rounded-lg shadow">
-            <div className="text-sm text-gray-500">Categories</div>
-            <div className="mt-2 text-3xl font-extrabold text-indigo-700">{categories.length}</div>
-            <div className="text-xs text-gray-400 mt-1">Total categories</div>
-          </div>
-          <div className="p-6 bg-white rounded-lg shadow">
-            <div className="text-sm text-gray-500">Users</div>
-            <div className="mt-2 text-3xl font-extrabold text-gray-800">{totalUsers}</div>
-            <div className="text-xs text-gray-400 mt-1">Registered users</div>
-          </div>
+        <section className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+          <StatCard title="Revenue" value={`$${Number(revenue||0).toFixed(2)}`} subtitle="Total revenue" color="green" />
+          <StatCard title="Products" value={products.length} subtitle="Total products" color="sky" />
+          <StatCard title="Categories" value={categories.length} subtitle="Total categories" color="indigo" />
+          <StatCard title="Users" value={totalUsers} subtitle="Registered users" color="gray" />
         </section>
 
         <section className="mb-6">

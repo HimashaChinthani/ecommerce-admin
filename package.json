@@ -5,6 +5,7 @@
   "scripts": {
     "start": "node src/app.js",
     "dev": "nodemon src/app.js",
+    "build": "cd client && npm run build",
     "seed": "node src/utils/seed.js"
   },
   "keywords": [],
