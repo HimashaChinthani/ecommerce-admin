@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import api from '../lib/api'
 import Toast from '../components/Toast'
+import StatCard from '../components/StatCard'
 
 function Header({ onOpenProfile, isAdmin, onOpenCreate, onCreateCategory }){
   return (
@@ -138,24 +139,10 @@ export default function Dashboard(){
     <div className="min-h-screen bg-gradient-to-b from-sky-50 to-white">
       <Header onOpenProfile={openProfile} isAdmin={isAdmin} onOpenCreate={() => setShowCreate(true)} onCreateCategory={createCategory} />
       <main className="max-w-6xl mx-auto p-6">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-          <div className="card">
-            <div className="text-sm text-gray-500">Products</div>
-            <div className="text-3xl font-extrabold">{products.length}</div>
-            <div className="text-xs text-gray-400 mt-1">Total catalog items</div>
-          </div>
-          <div className="card">
-            <div className="text-sm text-gray-500">Orders</div>
-            <div className="text-3xl font-extrabold">{orders.length}</div>
-            <div className="text-xs text-gray-400 mt-1">Orders placed</div>
-          </div>
-          {isAdmin && (
-            <div className="card">
-              <div className="text-sm text-gray-500">Revenue</div>
-              <div className="text-3xl font-extrabold">${revenueUsd.toFixed(2)}</div>
-              <div className="text-xs text-gray-400 mt-1">Total revenue</div>
-            </div>
-          )}
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 mb-6">
+          <StatCard title="Products" value={products.length} subtitle="Total catalog items" color="sky" />
+          <StatCard title="Orders" value={orders.length} subtitle="Orders placed" color="indigo" />
+          {isAdmin && <StatCard title="Revenue" value={`$${revenueUsd.toFixed(2)}`} subtitle="Total revenue" color="green" />}
         </div>
 
         <section className="mb-6">
@@ -171,20 +158,21 @@ export default function Dashboard(){
               ))
             ) : products.map(p => (
               <div key={p.id} className="card hover:shadow-lg cursor-pointer" onClick={() => setSelectedProduct(p)}>
-                <div className="mb-3 rounded-md overflow-hidden">
+                <div className="mb-3 rounded-md overflow-hidden relative">
                   <img
                     src={p.filename ? `${backendBase}/api/products/${p.id}/image` : '/default-product.svg'}
                     alt={p.name}
                     onError={(e) => { e.currentTarget.src = '/default-product.svg' }}
                     className="w-full h-40 object-cover"
                   />
+                  <div className="absolute top-2 right-2 bg-white/80 px-3 py-1 rounded text-sm font-semibold text-sky-600 shadow">${(Number(p.price)||0).toFixed(2)}</div>
                   <div className="p-3 bg-white">
                     <div className="text-sm text-gray-500">{p.category || 'Product'}</div>
                   </div>
                 </div>
                 <div className="font-semibold text-lg">{p.name}</div>
                 <div className="text-sm text-gray-500 truncate">{p.description}</div>
-                <div className="mt-3 font-medium text-sky-600">${(Number(p.price)||0).toFixed(2)}</div>
+                <div className="mt-3 font-medium text-sky-600">&nbsp;</div>
               </div>
             ))}
           </div>

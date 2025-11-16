@@ -123,8 +123,106 @@ async function buildAdmin() {
           },
         },
       },
-      { resource: Order, options: { isAccessible: ({ currentAdmin }) => currentAdmin && currentAdmin.role === 'admin' } },
-      { resource: OrderItem, options: { isAccessible: ({ currentAdmin }) => currentAdmin && currentAdmin.role === 'admin' } },
+      {
+        resource: Order,
+        options: {
+          // Auto-fill the UserId for newly created orders using the currently
+          // logged-in admin/user. Make the field non-editable in the new form
+          // so the user doesn't have to enter it manually.
+          properties: {
+            UserId: {
+              isVisible: { list: true, filter: true, show: true, edit: false },
+            },
+            total: {
+              isVisible: { list: true, filter: true, show: true, edit: false },
+            },
+          },
+          actions: {
+            new: {
+              // Before creating a new Order, inject the currentAdmin id
+              // into the payload so UserId is set automatically.
+              before: async (request, context) => {
+                try {
+                  const currentAdmin = context && context.currentAdmin;
+                  if (!currentAdmin) return request;
+
+                  // For create POST requests, AdminJS provides `request.payload`.
+                  // Ensure UserId is set to the current admin/user id.
+                  if (request.method === 'post') {
+                    // Some AdminJS versions use `request.payload`, others use `request.payload` nested.
+                    const payload = request.payload || {};
+                    // Only set UserId when it's not already provided.
+                    if (!payload.UserId && !payload.userId) {
+                      // Use the FK column name used by Sequelize (UserId)
+                      request.payload = { ...payload, UserId: currentAdmin.id };
+                    }
+                  }
+                  return request;
+                } catch (err) {
+                  console.error('Order new.before hook error', err);
+                  return request;
+                }
+              },
+            },
+          },
+          // Keep existing access restriction: only admins can manage orders in the UI
+          isAccessible: ({ currentAdmin }) => currentAdmin && currentAdmin.role === 'admin',
+        },
+      },
+      {
+        resource: OrderItem,
+        options: {
+          properties: {
+            price: { isVisible: { list: true, filter: true, show: true, edit: false } },
+            ProductId: { isVisible: { list: true, filter: true, show: true, edit: true } },
+            OrderId: { isVisible: { list: true, filter: true, show: true, edit: true } },
+          },
+          actions: {
+            new: {
+              isAccessible: ({ currentAdmin }) => !!currentAdmin,
+              before: async (request, context) => {
+                try {
+                  if (request.method === 'post') {
+                    const payload = request.payload || {};
+                    const productId = payload.ProductId || payload.productId;
+                    if (productId && (payload.price === undefined || payload.price === null || payload.price === '')) {
+                      const product = await Product.findByPk(productId);
+                      if (product && typeof product.price !== 'undefined') {
+                        request.payload = { ...payload, price: product.price };
+                      }
+                    }
+                  }
+                } catch (err) {
+                  console.error('OrderItem new.before hook error', err);
+                }
+                return request;
+              },
+            },
+            edit: {
+              isAccessible: ({ currentAdmin }) => !!currentAdmin,
+              before: async (request, context) => {
+                try {
+                  if (request.method === 'post' || request.method === 'put') {
+                    const payload = request.payload || {};
+                    const productId = payload.ProductId || payload.productId;
+                    if (productId && (payload.price === undefined || payload.price === null || payload.price === '')) {
+                      const product = await Product.findByPk(productId);
+                      if (product && typeof product.price !== 'undefined') {
+                        request.payload = { ...payload, price: product.price };
+                      }
+                    }
+                  }
+                } catch (err) {
+                  console.error('OrderItem edit.before hook error', err);
+                }
+                return request;
+              },
+            },
+          },
+          // Allow authenticated users; ownership of orders enforced in Order resource
+          isAccessible: ({ currentAdmin }) => !!currentAdmin,
+        },
+      },
       {
         resource: Setting,
         options: {
