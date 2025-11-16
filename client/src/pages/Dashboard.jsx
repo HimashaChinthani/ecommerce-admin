@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react'
 import api from '../lib/api'
 import Toast from '../components/Toast'
 
-function Header(){
+function Header({ onOpenProfile, isAdmin, onOpenCreate, onCreateCategory }){
   return (
     <header className="bg-white/60 backdrop-blur-sm shadow-md sticky top-0 z-20">
       <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
@@ -13,10 +13,16 @@ function Header(){
             <div className="text-xs text-gray-500">Admin dashboard</div>
           </div>
         </div>
-        
+
         <div className="flex items-center gap-4">
+          {isAdmin && (
+            <>
+              <button onClick={onOpenCreate} className="text-sm text-white bg-sky-600 px-3 py-1 rounded">New product</button>
+              <button onClick={onCreateCategory} className="text-sm text-sky-600 border border-sky-600 px-3 py-1 rounded">New category</button>
+            </>
+          )}
+          <button onClick={onOpenProfile} className="text-sm text-gray-700 hover:underline">Manage profile</button>
           <a target="_blank" rel="noreferrer" href="/admin" className="text-sm text-sky-600 hover:underline">Open Admin UI</a>
-        
         </div>
       </div>
     </header>
@@ -27,6 +33,8 @@ export default function Dashboard(){
   const [products, setProducts] = useState([])
   const [orders, setOrders] = useState([])
   const [loading, setLoading] = useState(true)
+  const [profileOpen, setProfileOpen] = useState(false)
+  const [profile, setProfile] = useState({ name: '', email: '', password: '' })
   const [selectedProduct, setSelectedProduct] = useState(null)
   const [toast, setToast] = useState(null)
   const [showCreate, setShowCreate] = useState(false)
@@ -83,9 +91,52 @@ export default function Dashboard(){
   // Conversion: $1 = Rs 300
   const revenueRs = orders.reduce((s, o) => s + ((Number(o.total) || 0) * 300), 0)
 
+  // determine current user role from localStorage
+  let currentUser = null
+  try { currentUser = JSON.parse(localStorage.getItem('user') || 'null') } catch (e) { currentUser = null }
+  const isAdmin = currentUser && currentUser.role === 'admin'
+
+  // Profile handlers
+  async function openProfile(){
+    setProfileOpen(true)
+    try{
+      const res = await api.get('/users/me')
+      setProfile({ name: res.data.name || '', email: res.data.email || '', password: '' })
+    }catch(err){
+      setToast({ message: 'Failed to load profile', type: 'error' })
+    }
+  }
+
+  async function saveProfile(e){
+    e.preventDefault()
+    try{
+      const body = { name: profile.name, email: profile.email }
+      if (profile.password) body.password = profile.password
+      const res = await api.put('/users/me', body)
+      setProfileOpen(false)
+      localStorage.setItem('user', JSON.stringify(res.data))
+      setToast({ message: 'Profile updated', type: 'success' })
+    }catch(err){
+      console.error('Update profile failed', err)
+      setToast({ message: err?.response?.data?.error || err.message || 'Update failed', type: 'error' })
+    }
+  }
+
+  async function createCategory() {
+    try {
+      const name = window.prompt('Category name')
+      if (!name) return
+      const res = await api.post('/categories', { name })
+      setToast({ message: 'Category created', type: 'success' })
+    } catch (err) {
+      console.error('Create category failed', err)
+      setToast({ message: err?.response?.data?.error || err.message || 'Create category failed', type: 'error' })
+    }
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-sky-50 to-white">
-      <Header />
+      <Header onOpenProfile={openProfile} isAdmin={isAdmin} onOpenCreate={() => setShowCreate(true)} onCreateCategory={createCategory} />
       <main className="max-w-6xl mx-auto p-6">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
           <div className="card">
@@ -98,11 +149,13 @@ export default function Dashboard(){
             <div className="text-3xl font-extrabold">{orders.length}</div>
             <div className="text-xs text-gray-400 mt-1">Orders placed</div>
           </div>
-          <div className="card">
-            <div className="text-sm text-gray-500">Revenue</div>
-            <div className="text-3xl font-extrabold">${revenueUsd.toFixed(2)}</div>
-            <div className="text-xs text-gray-400 mt-1">Total revenue</div>
-          </div>
+          {isAdmin && (
+            <div className="card">
+              <div className="text-sm text-gray-500">Revenue</div>
+              <div className="text-3xl font-extrabold">${revenueUsd.toFixed(2)}</div>
+              <div className="text-xs text-gray-400 mt-1">Total revenue</div>
+            </div>
+          )}
         </div>
 
         <section className="mb-6">
@@ -208,6 +261,30 @@ export default function Dashboard(){
                   </div>
                 </div>
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* Profile modal */}
+        {profileOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center">
+            <div className="absolute inset-0 bg-black/40" onClick={() => setProfileOpen(false)} />
+            <div className="relative max-w-md w-full mx-4">
+              <form onSubmit={saveProfile} className="bg-white rounded-xl shadow-2xl p-6">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-semibold">Manage profile</h3>
+                  <button type="button" className="text-gray-500" onClick={() => setProfileOpen(false)}>Close ✕</button>
+                </div>
+                <div className="grid grid-cols-1 gap-3 mt-4">
+                  <input required placeholder="Name" value={profile.name} onChange={e => setProfile({...profile, name: e.target.value})} className="p-3 border rounded" />
+                  <input required placeholder="Email" type="email" value={profile.email} onChange={e => setProfile({...profile, email: e.target.value})} className="p-3 border rounded" />
+                  <input placeholder="New password (leave blank to keep)" type="password" value={profile.password} onChange={e => setProfile({...profile, password: e.target.value})} className="p-3 border rounded" />
+                  <div className="flex gap-2 mt-4">
+                    <button type="submit" className="px-4 py-2 bg-sky-600 text-white rounded">Save</button>
+                    <button type="button" onClick={() => setProfileOpen(false)} className="px-4 py-2 border rounded">Cancel</button>
+                  </div>
+                </div>
+              </form>
             </div>
           </div>
         )}

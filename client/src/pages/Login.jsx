@@ -17,11 +17,23 @@ export default function Login(){
     setError('')
     try{
       const res = await api.post('/login', { email, password })
-      const { token } = res.data
+      const { token, user } = res.data
       if (!token) throw new Error('No token returned')
-      // persist token and set default header for immediate requests
+      // persist token and user and set default header for immediate requests
       localStorage.setItem('token', token)
+      localStorage.setItem('user', JSON.stringify(user || {}))
       api.defaults.headers.common.Authorization = `Bearer ${token}`
+
+      // Redirect based on role:
+      // - admins: set AdminJS session cookie via helper route then let server redirect into Admin UI
+      // - regular users: go to client dashboard
+      if (user && user.role === 'admin') {
+        // set auth header for client API requests and go to the client admin dashboard
+        api.defaults.headers.common.Authorization = `Bearer ${token}`
+        navigate('/admin-dashboard')
+        return
+      }
+
       navigate('/dashboard')
     }catch(err){
       // Surface helpful messages from backend when present
